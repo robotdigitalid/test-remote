@@ -215,7 +215,6 @@ class SiteCreator {
       defaultViewport: null,
       args,
     });
-    return browser;
   }
 
   async initPage(){
