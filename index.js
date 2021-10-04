@@ -1,5 +1,5 @@
 const puppeteer = require('puppeteer-core');
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 
 class SiteCreator {
@@ -7,13 +7,19 @@ class SiteCreator {
     this.content = content;
     this.executablePath = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
     this.userDataDir = 'C:/Users/hakir/AppData/Local/Google/Chrome/User Data';
-    this.args = ['--user-data-dir'];
+    this.templateDir = path.join(__dirname, 'template')
+    this.args = [];
     this.setProfile(profile);
   }
 
   setProfile(profile){
-    if (!profile || !fs.existsSync(path.join(this.userDataDir, profile, 'Google Profile.ico')))
+    const sourceDir = path.join(this.userDataDir, profile);
+    const projectDir = path.join(__dirname, profile);
+    if (!profile || !fs.existsSync(path.join(sourceDir, 'Google Profile.ico')))
       throw new Error(`Profile is invalid, for available chrome profile!`);
+    if (!fs.existsSync(projectDir)) fs.copySync(this.templateDir, projectDir);
+    else fs.unlinkSync(path.join(projectDir, 'Default'));
+    fs.ensureSymlinkSync(sourceDir, path.join(projectDir, 'Default'), 'junction');
     this.profile = profile;
   }
 
@@ -208,12 +214,11 @@ class SiteCreator {
 
   async initBrowser(){
     console.log(`Open browser with '${this.profile}' profile..`);
-    const args = [...this.args, `--profile-directory=${this.profile}`];
     this.browser = await puppeteer.launch({
       executablePath: this.executablePath,
       headless: false,
       defaultViewport: null,
-      args,
+      userDataDir: path.join(__dirname, this.profile),
     });
   }
 
@@ -593,12 +598,12 @@ module.exports = SiteCreator;
 
 
 (async () => {
-  const fileContent = fs.readFileSync(path.join('C:/Users/hakir/Downloads/EBOOK ITUNES.csv'), { encoding: 'utf-8' });
+  const fileContent = fs.readFileSync(path.join('./EBOOK ITUNES.csv'), { encoding: 'utf-8' });
   const content = fileContent.split('\n');
-  const defaultTool = new SiteCreator(content, 'Default');
-  const profileOneTool = new SiteCreator(content, 'Default');
-  defaultTool.start();
+  // const defaultTool = new SiteCreator(content, 'Default');
+  const profileOneTool = new SiteCreator(content, 'Profile 6');
+  // defaultTool.start();
   setTimeout(() => {
     profileOneTool.start();
-  }, 1000 * 3);
+  }, 1000 * 60 * 5);
 })()
